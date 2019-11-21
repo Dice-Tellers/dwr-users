@@ -7,7 +7,7 @@ from UsersService.database import db, User, Follower
 users = Blueprint('users', __name__)
 
 
-# Returns the list of all users
+# Return the list of all users
 @users.route('/users')
 def _users():
     usrs = db.session.query(User)
@@ -24,11 +24,11 @@ def _create_user():
         q = db.session.query(User).filter(User.email == user_data['email'])
         user = q.first()
         if user is not None:
-            abort('406', 'The email address is already being used')
+            abort(406, 'The email address is already being used')
         # check date of birth < today
         dateofbirth = datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y').date()
         if dateofbirth < date.today():
-            abort('400', 'Date of birth can be greater than today')
+            abort(400, 'Date of birth can be greater than today')
         
         # create new user
         new_user = User()
@@ -42,12 +42,35 @@ def _create_user():
         db.session.commit()
     # If values in request body aren't well-formed
     except ValueError:
-        abort('404', 'Error with one parameters')
+        abort(400, 'Error with one parameters')
 
     return make_response("New user created", 201)
+    
+# Check email and password of a user
+@users.route('/users/login', methods=['POST'])
+def _login():
+    try:
+        email = request.args.get('email')
+        password = request.args.get('password')
+        print(password)
+
+        # Check user existence
+        q = db.session.query(User).filter(User.email == email)
+        user = q.first()
+        if user is None:
+            abort(404, 'The specified email does not exist')
+
+        # Check password
+        if not user.authenticate(password):
+            abort(400, 'Password uncorrect')
+
+    except ValueError:
+        abort(404, 'Error with one parameters')
+
+    return make_response("Email and password ok", 200)
 
 
-# Returns informations about a user
+# Return informations about a user
 @users.route('/users/<int:userid>', methods=['GET'])
 def _wall(userid):
     """ Ci pensa l'API gateway a differenziare tra my wall e other user wall,
@@ -63,7 +86,7 @@ def _wall(userid):
         return jsonify(user.serialize_all())
 
 
-# Fai eguire un utente da un altro utente (TODO:tradurre)
+# Let a user follows another one
 @users.route('/users/<int:id_user>/follow', methods=['POST'])
 def _follow_user(id_user):
     current_user_id = -1
@@ -72,12 +95,14 @@ def _follow_user(id_user):
     except Exception:
         abort(400, "Error with current_user_id parameter")
 
-    if id_user == current_user_id:
-        abort(400, "A user can't follow himself")
+    # Check users existence
     if not _check_user_existence(id_user):
         abort(404, 'The specified userid does not exist')
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
+    # Check correctness
+    if id_user == current_user_id:
+        abort(400, "A user can't follow himself")
     if _check_follower_existence(current_user_id, id_user):
         abort(400, "The user already follow this storyteller")
 
@@ -85,7 +110,7 @@ def _follow_user(id_user):
     new_follower.follower_id = current_user_id
     new_follower.followed_id = id_user
 
-    # add follower to database
+    # Add follower to database
     db.session.add(new_follower)
     db.session.query(User).filter_by(id=id_user).update({'follower_counter': User.follower_counter + 1})
     db.session.commit()
@@ -93,7 +118,7 @@ def _follow_user(id_user):
     return make_response("User followed", 200)
 
 
-# Fai smettere di seguire un utente da un altro utente (TODO:tradurre)
+# Let a user unfollows another one
 @users.route('/users/<int:id_user>/unfollow', methods=['POST'])
 def _unfollow_user(id_user):
     current_user_id = -1
@@ -102,12 +127,14 @@ def _unfollow_user(id_user):
     except Exception:
         abort(400, "Error with current_user_id parameter")
 
-    if id_user == current_user_id:
-        abort(400, "A user can't unfollow himself")
+    # Check user existence
     if not _check_user_existence(id_user):
         abort(404, 'The specified userid does not exist')
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
+    # Check correctness
+    if id_user == current_user_id:
+        abort(400, "A user can't unfollow himself")
     if not _check_follower_existence(current_user_id, id_user):
         abort(400, "The user should follow the other user before unfollowing")
 
@@ -118,7 +145,7 @@ def _unfollow_user(id_user):
     return make_response("User unfollowed", 200)
 
 
-# Returns the list of users followed by a user
+# Return the list of users followed by a user
 @users.route('/users/<int:id_user>/followers', methods=['GET'])
 def _followers(id_user):
     # Check user existence
@@ -129,12 +156,12 @@ def _followers(id_user):
         return jsonify([user.serialize() for user in usrs])        
 
 
-# Returns True if the user identified by id_user exists
+# Return True if the user identified by id_user exists
 def _check_user_existence(id_user):
     user = db.session.query(User).filter(User.id == id_user)
     return user.first() is not None
 
-# Returns True if the user identified by follower_id follows the user identified by followed_id
+# Return True if the user identified by follower_id follows the user identified by followed_id
 def _check_follower_existence(follower_id, followed_id):
     follower = db.session.query(Follower).filter_by(follower_id=follower_id, followed_id=followed_id)
     return follower.first() is not None

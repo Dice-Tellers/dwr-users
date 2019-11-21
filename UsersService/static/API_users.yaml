@@ -11,7 +11,7 @@ servers:
 paths:
 	/users:
 	get:
-		summary: Returns the list of all users
+		summary: Return the list of all users
 		responses:
 			'200':
 				description: A JSON array of JSON objects containing users data
@@ -42,9 +42,34 @@ paths:
 				default:
 					description: Unexpected error
 
+/users/login:
+		post:
+			summary: Check email and password of a user
+				parameters:
+					- name: email
+					  in: query 
+					  required: True
+					  description: The email of the user
+					  schema:
+							type: string
+					- name: password
+					  in: query
+					  required: True
+					  description: The password of the user
+					  schema:
+							type: string
+				responses:
+					'200':
+						description: Email and password ok
+					'404':
+						description: The specified email does not exist
+					'400':
+						description: Error with one parameter /
+												 Password uncorrect
+
 	/users/{userid}:
 		get:
-			summary: Returns the wall of the user identified by userid
+			summary: Return the wall of the user identified by userid
 			parameters:
 				- name: userid
 					in: path
@@ -70,7 +95,7 @@ paths:
 			summary: Let the user identified by current_user_id follows the user identified by userid
 			parameters:
 				- name: current_user_id
-					in: query string
+					in: query
 					required: True
 					description: The identifier of the user that want to follow the other user
 					schema:
@@ -92,7 +117,7 @@ paths:
 			summay: Let the user identified by current_user_id unfollows the user identified by userid
 			parameters:
 				- name: current_user_id
-					in: query string
+					in: query
 					required: True
 					description: The identifier of the user that want to unfollow the other user
 					schema:
