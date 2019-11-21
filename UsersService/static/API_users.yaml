@@ -140,8 +140,10 @@ paths:
       responses:
         '200':
           description: A JSON array of JSON objects which represent the users followed by the user identified by userid
-          schema: 
-            $ref: '#/definitions/user'
+          schema:
+            type: array
+            items: 
+              $ref: '#/definitions/user'
         '404':
           description: The specified userid does not exist
 definitions:

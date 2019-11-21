@@ -93,7 +93,7 @@ def _wall(userid):
 
 # Let a user follows another one
 @users.operation('followUser')
-def _follow_user(id_user):
+def _follow_user(userid):
     current_user_id = -1
     try:
         current_user_id = int(request.args.get('current_user_id'))
@@ -102,23 +102,23 @@ def _follow_user(id_user):
         abort(400, "Error with current_user_id parameter")
 
     # Check users existence
-    if not _check_user_existence(id_user):
+    if not _check_user_existence(userid):
         abort(404, 'The specified userid does not exist')
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
-    if id_user == current_user_id:
+    if userid == current_user_id:
         abort(400, "A user can't follow himself")
-    if _check_follower_existence(current_user_id, id_user):
+    if _check_follower_existence(current_user_id, userid):
         abort(400, "The user already follow this storyteller")
 
     new_follower = Follower()
     new_follower.follower_id = current_user_id
-    new_follower.followed_id = id_user
+    new_follower.followed_id = userid
 
     # Add follower to database
     db.session.add(new_follower)
-    db.session.query(User).filter_by(id=id_user).update({'follower_counter': User.follower_counter + 1})
+    db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter + 1})
     db.session.commit()
 
     return make_response("User followed", 200)
@@ -126,7 +126,7 @@ def _follow_user(id_user):
 
 # Let a user unfollows another one
 @users.operation('unfollowUser')
-def _unfollow_user(id_user):
+def _unfollow_user(userid):
     current_user_id = -1
     try:
         current_user_id = int(request.args.get('current_user_id'))
@@ -135,18 +135,18 @@ def _unfollow_user(id_user):
         abort(400, "Error with current_user_id parameter")
 
     # Check user existence
-    if not _check_user_existence(id_user):
+    if not _check_user_existence(userid):
         abort(404, 'The specified userid does not exist')
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
-    if id_user == current_user_id:
+    if userid == current_user_id:
         abort(400, "A user can't unfollow himself")
-    if not _check_follower_existence(current_user_id, id_user):
+    if not _check_follower_existence(current_user_id, userid):
         abort(400, "The user should follow the other user before unfollowing")
 
-    Follower.query.filter_by(follower_id=current_user_id, followed_id=id_user).delete()
-    db.session.query(User).filter_by(id=id_user).update({'follower_counter': User.follower_counter - 1})
+    Follower.query.filter_by(follower_id=current_user_id, followed_id=userid).delete()
+    db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter - 1})
     db.session.commit()
 
     return make_response("User unfollowed", 200)
@@ -154,19 +154,19 @@ def _unfollow_user(id_user):
 
 # Return the list of users followed by a user
 @users.operation('getFollowers')
-def _followers(id_user):
+def _followers(userid):
     # Check user existence
-    if not _check_user_existence(id_user):
+    if not _check_user_existence(userid):
         abort(404, 'The specified userid does not exist')
     # Return followers list
     else:
-        usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=id_user)
+        usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=userid)
         return jsonify([user.serialize() for user in usrs])        
 
 
-# Return True if the user identified by id_user exists
-def _check_user_existence(id_user):
-    user = db.session.query(User).filter(User.id == id_user)
+# Return True if the user identified by userid exists
+def _check_user_existence(userid):
+    user = db.session.query(User).filter(User.id == userid)
     return user.first() is not None
 
 # Return True if the user identified by follower_id follows the user identified by followed_id
