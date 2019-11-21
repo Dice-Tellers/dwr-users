@@ -1,21 +1,24 @@
 import datetime
+import os
 
 from flask import Blueprint
 from flask import jsonify, request, abort, make_response
+from flakon import SwaggerBlueprint
 from UsersService.database import db, User, Follower
 
-users = Blueprint('users', __name__)
+YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
+users = SwaggerBlueprint('users', '__name__', swagger_spec=YML)
 
 
 # Return the list of all users
-@users.route('/users')
+@users.operation('getUsers')
 def _users():
     usrs = db.session.query(User)
     return jsonify([user.serialize() for user in usrs])
 
 
 # Create a new user
-@users.route('/users/create', methods=['POST'])
+@users.operation('createUser')
 def _create_user():    
     try:
         user_data = request.get_json(request)
@@ -45,9 +48,10 @@ def _create_user():
         abort(400, 'Error with one parameters')
 
     return make_response("New user created", 201)
-    
+
+
 # Check email and password of a user
-@users.route('/users/login', methods=['POST'])
+@users.operation('loginUser')
 def _login():
     try:
         email = request.args.get('email')
@@ -64,6 +68,7 @@ def _login():
         if not user.authenticate(password):
             abort(400, 'Password uncorrect')
 
+    # If values in request body aren't well-formed
     except ValueError:
         abort(404, 'Error with one parameters')
 
@@ -71,7 +76,7 @@ def _login():
 
 
 # Return informations about a user
-@users.route('/users/<int:userid>', methods=['GET'])
+@users.operation('getUserData')
 def _wall(userid):
     """ Ci pensa l'API gateway a differenziare tra my wall e other user wall,
          le informazioni vanno restituite tutte """
@@ -81,17 +86,18 @@ def _wall(userid):
     # Check user existence
     if user is None:
         abort(404, 'The specified userid does not exist')
-    # Returns user wall
+    # Return user wall
     else:
         return jsonify(user.serialize_all())
 
 
 # Let a user follows another one
-@users.route('/users/<int:id_user>/follow', methods=['POST'])
+@users.operation('followUser')
 def _follow_user(id_user):
     current_user_id = -1
     try:
         current_user_id = int(request.args.get('current_user_id'))
+    # If values in request body aren't well-formed
     except Exception:
         abort(400, "Error with current_user_id parameter")
 
@@ -119,11 +125,12 @@ def _follow_user(id_user):
 
 
 # Let a user unfollows another one
-@users.route('/users/<int:id_user>/unfollow', methods=['POST'])
+@users.operation('unfollowUser')
 def _unfollow_user(id_user):
     current_user_id = -1
     try:
         current_user_id = int(request.args.get('current_user_id'))
+    # If values in request body aren't well-formed
     except Exception:
         abort(400, "Error with current_user_id parameter")
 
@@ -146,11 +153,12 @@ def _unfollow_user(id_user):
 
 
 # Return the list of users followed by a user
-@users.route('/users/<int:id_user>/followers', methods=['GET'])
+@users.operation('getFollowers')
 def _followers(id_user):
     # Check user existence
     if not _check_user_existence(id_user):
         abort(404, 'The specified userid does not exist')
+    # Return followers list
     else:
         usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=id_user)
         return jsonify([user.serialize() for user in usrs])        

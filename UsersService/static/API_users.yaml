@@ -1,210 +1,190 @@
-openapi: 3.0.0
+swagger: '2.0'
 info:
-	title: Users microservice
-	description: bla bla bla
-	version: 1.0.0
-
-servers:
-	- url: http://127.0.0.1:5000/
-	- description: bla bla
-
+  title: Users microservice
+  description: Operations to menage users
+  version: 1.0.0
+host: 127.0.0.1
+schemes:
+  - http
+  - https
 paths:
-	/users:
-	get:
-		summary: Return the list of all users
-		responses:
-			'200':
-				description: A JSON array of JSON objects containing users data
-				content: 
-					application/json:
-						schema: 
-							$ref: '#/definitions/user'									
-			default:
-				description: Unexpected error
-				
-	/users/create:
-		post:
-			summary: Create a new user with the data in the request body
-			requestBody: 
-				required: True
-				description: New user data
-				content:
-					application/json:
-						schema:
-							$ref: '#/definitions/new_user' 
-			responses:
-				'201':
-					description: Success
-				'400':
-					description: Error with one parameters / Date of birth can be greater than today
-				'406':
-					description: The email address is already being used
-				default:
-					description: Unexpected error
-
-/users/login:
-		post:
-			summary: Check email and password of a user
-				parameters:
-					- name: email
-					  in: query 
-					  required: True
-					  description: The email of the user
-					  schema:
-							type: string
-					- name: password
-					  in: query
-					  required: True
-					  description: The password of the user
-					  schema:
-							type: string
-				responses:
-					'200':
-						description: Email and password ok
-					'404':
-						description: The specified email does not exist
-					'400':
-						description: Error with one parameter /
-												 Password uncorrect
-
-	/users/{userid}:
-		get:
-			summary: Return the wall of the user identified by userid
-			parameters:
-				- name: userid
-					in: path
-					required: True
-					description: The value that identifies the user
-					schema:
-						type: integer
-						format: int64
-			responses:
-				'200':
-					description: A JSON object containing all the user data		
-					content:
-						application/json:
-              schema:
-                $ref: '#/definitions/user_wall'
-				'404':
-					description: The specified userid does not exist
-				default:
-					description: Unexpeted error
-
-	/users/{userid}/follow:
-		post:
-			summary: Let the user identified by current_user_id follows the user identified by userid
-			parameters:
-				- name: current_user_id
-					in: query
-					required: True
-					description: The identifier of the user that want to follow the other user
-					schema:
-						type: integer
-						format: int64
-			responses:
-				'200':
-					description: User followed
-				'404':
-					description: The specified userid does not exist /
-											 The specified current_user_id does not exist
-				'400':
-					description: A user can't follow himself /
-											 The user already follow this storyteller /
-											 Error with current_user_id parameter
-
-	/users/{userid}/unfollow:
-		post:
-			summay: Let the user identified by current_user_id unfollows the user identified by userid
-			parameters:
-				- name: current_user_id
-					in: query
-					required: True
-					description: The identifier of the user that want to unfollow the other user
-					schema:
-						type: integer
-						format: int64
-			responses:
-				'200':
-					description: User unfollowed
-				'404':
-					description: The specified userid does not exist / The specified current_user_id does not exist
-				'400':
-					description: A user can't unfollow himself /
-											 The user should follow the other user before unfollowing /
-											 Error with current_user_id parameter
-
-	/users/{userid}/followers:
-		get:
-			summary: Return the list of users followed by a user
-			description: Return a JSON array of JSON objects which represent users 
-									 followed by the user identified by userid
-			parameters:
-				- name: userid
-					in: path
-					required: True
-					description: The value that identifies the user
-					schema:
-						type: integer
-						format: int64
-			responses:
-				'200':
-					description: A JSON array of JSON objects which represent the users
-											 followed by the user identified by userid		
-					content:
-						application/json:
-						schema: 
-							$ref: '#/definitions/user'
-				'404':
-					description: The specified userid does not exist
-				default:
-					description: Unexpeted error
-		
+  /users:
+    get:
+      summary: Return the list of all users
+      operationId: getUsers
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: A JSON array of JSON objects containing users data
+          schema: 
+            type: array
+            items: 
+              $ref: '#/definitions/user'
+  /users/create:
+    post:
+      summary: Create a new user with the data in the request body
+      operationId: createUser
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: new_user
+          schema:
+            $ref: '#/definitions/new_user' 
+      responses:
+        '201':
+          description: Success
+        '400':
+          description: Error with one parameters/Date of birth can be greater than today
+        '406':
+          description: The email address is already being used
+  /users/login:
+    post:
+      summary: Check email and password of a user
+      operationId: loginUser
+      parameters:
+        - in: query
+          name: email
+          required: True
+          description: The email of the user
+          type: string
+        - in: query
+          name: password
+          required: True
+          description: The password of the user
+          type: string
+      responses:
+        '200':
+          description: Email and password ok
+        '404':
+          description: The specified email does not exist
+        '400':
+          description: Error with one parameter/Password uncorrect
+  /users/{userid}:
+    get:
+      summary: Return the wall of the user identified by userid
+      operationId: getUserData
+      parameters:
+        - in: path
+          name: userid
+          required: True
+          description: The value that identifies the user
+          type: integer
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: A JSON object containing all the user data
+          schema:
+            $ref: '#/definitions/user_wall'
+        '404':
+          description: The specified userid does not exist
+  /users/{userid}/follow:
+    post:
+      summary: Let the user identified by current_user_id follows the user identified by userid
+      operationId: followUser
+      parameters:
+        - in: path
+          name: userid
+          required: True
+          description: The value that identifies the user to follow
+          type: integer
+        - in: query 
+          name: current_user_id
+          required: True
+          description: The identifier of the user that want to follow the other user
+          type: integer
+      responses:
+        '200':
+          description: User followed
+        '404':
+          description: The specified userid does not exist/The specified current_user_id does not exist
+        '400':
+          description: A user can't follow himself/The user already follow this storyteller/Error with current_user_id parameter
+  /users/{userid}/unfollow:
+    post:
+      summary: Let the user identified by current_user_id unfollows the user identified by userid
+      operationId: unfollowUser
+      parameters:
+        - in: path
+          name: userid
+          required: True
+          description: The value that identifies the user to unfollow
+          type: integer
+        - in: query
+          name: current_user_id
+          required: True
+          description: The identifier of the user that want to unfollow the other user
+          type: integer
+      responses:
+        '200':
+          description: User unfollowed
+        '404':
+          description: The specified userid does not exist/The specified current_user_id does not exist
+        '400':
+          description: A user can't unfollow himself/The user should follow the other user before unfollowing/Error with current_user_id parameter
+  /users/{userid}/followers:
+    get:
+      summary: Return the list of users followed by a user
+      operationId: getFollowers
+      description: Return a JSON array of JSON objects which represent users followed by the user identified by userid
+      parameters:
+        - in: path
+          name: userid
+          required: True
+          description: The value that identifies the user
+          type: integer
+      produces:
+          - application/json
+      responses:
+        '200':
+          description: A JSON array of JSON objects which represent the users followed by the user identified by userid
+          schema: 
+            $ref: '#/definitions/user'
+        '404':
+          description: The specified userid does not exist
 definitions:
-	user:
-		type: object
-		properties:
-			id:
-				type: integer
-				format: int64
-			email:
-				type: string
-			firstname:
-				type: string
-			lastname:
-				type: string
-
-	user_wall:
-		type: object
-		properties:
-			id:
-				type: integer
-				format: int64
-			email:
-				type: string
-			firstname:
-				type: string
-			lastname:
-				type: string
-			dateofbirth:
-				type: string
-				format: '%d/%m/%Y'
-			follower_counter:
-				type: integer
-				format: int64
-			is_admmin:
-				type: boolean
-	
-	new_user:
-		type: object
-		properties:
-			email:
-				type: string
-			password:
-				type: string
-			firstname:
-				type: string
-			lastname:
-				type: string
-			dateofbirth:
-				type: string
-				format: '%d/%m/%Y'
+  user:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+  user_wall:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      dateofbirth:
+        type: string
+        description: dd/mm/yyyy format
+      follower_counter:
+        type: integer
+      is_admmin:
+        type: boolean
+  new_user:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      firstname:
+        type: string
+      lastname:
+        type: string
+      dateofbirth:
+        type: string
+        description: dd/mm/yyyy format
