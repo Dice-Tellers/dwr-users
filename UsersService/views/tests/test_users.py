@@ -56,6 +56,8 @@ class TestUsers(flask_testing.TestCase):
         body = json.loads(str(reply.data, 'utf8'))
         self.assertEqual(body['description'], expected_description)
     
+    # ----------- Test functions -----------
+
     def test_all_users(self):
         reply = self.client.get('/users')
         body = json.loads(str(reply.data, 'utf8'))
@@ -64,7 +66,6 @@ class TestUsers(flask_testing.TestCase):
             {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"}
         ])
 
-    #TODO
     def test_create_user(self):
         # Email address already used
         data = json.dumps({
@@ -122,7 +123,8 @@ class TestUsers(flask_testing.TestCase):
             'password'  : 'p'
         })
         reply = self.client.post('/users/login', data=data)
-        self.assertEqual(reply.status_code, 200)
+        body = json.loads(str(reply.data, 'utf8'))
+        self.assertEqual(body, {'userid': 2})
 
         # Password uncorrect
         data = json.dumps({

@@ -50,9 +50,16 @@ paths:
           name: login_data
           schema:
             $ref: '#/definitions/login_data'
+      produces:
+        - application/json
       responses:
         '200':
           description: Email and password ok
+          schema:
+            type: object
+            properties:
+              id:
+                type: integer
         '404':
           description: The specified email does not exist
         '400':
