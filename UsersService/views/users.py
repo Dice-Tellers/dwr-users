@@ -4,6 +4,7 @@ import os
 from flask import Blueprint
 from flask import jsonify, request, abort, make_response
 from flakon import SwaggerBlueprint
+from sqlalchemy import or_
 from UsersService.database import db, User, Follower
 
 YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
@@ -165,6 +166,29 @@ def _followers(userid):
     else:
         usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=userid)
         return jsonify([user.serialize() for user in usrs])        
+
+# Return the result of the search in the user list
+@users.operation('search')
+def _search():
+    try:
+        query = request.args.get('query')
+
+        if query is None:
+            abort(400, 'Error with one parameters')
+        else:
+            query = query.strip()
+        usrs = []
+
+        if query != '':
+            usrs = User.query.filter(or_(User.firstname.like('%' + query + '%'), User.lastname.like('%' + query + '%'))).all()
+        
+        if len(usrs) > 0:
+            return jsonify([user.serialize() for user in usrs])
+        else:
+            return jsonify({}), 204 
+    # If values in request body aren't well-formed
+    except ValueError:
+        abort(400, 'Error with query parameters')   
 
 
 # Return True if the user identified by userid exists

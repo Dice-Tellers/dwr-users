@@ -10,7 +10,7 @@ schemes:
 paths:
   /users:
     get:
-      summary: Return the list of all users
+      description: Return the list of all users
       operationId: getUsers
       produces:
         - application/json
@@ -23,7 +23,7 @@ paths:
               $ref: '#/definitions/user'
   /users/create:
     post:
-      summary: Create a new user with the data in the request body
+      description: Create a new user with the data in the request body
       operationId: createUser
       consumes:
         - application/json
@@ -41,7 +41,7 @@ paths:
           description: The email address is already being used
   /users/login:
     post:
-      summary: Check email and password of a user
+      description: Check email and password of a user
       operationId: loginUser
       parameters:
         - in: query
@@ -63,7 +63,7 @@ paths:
           description: Error with one parameter/Password uncorrect
   /users/{userid}:
     get:
-      summary: Return the wall of the user identified by userid
+      description: Return the wall of the user identified by userid
       operationId: getUserData
       parameters:
         - in: path
@@ -82,7 +82,7 @@ paths:
           description: The specified userid does not exist
   /users/{userid}/follow:
     post:
-      summary: Let the user identified by current_user_id follows the user identified by userid
+      description: Let the user identified by current_user_id follows the user identified by userid
       operationId: followUser
       parameters:
         - in: path
@@ -104,7 +104,7 @@ paths:
           description: A user can't follow himself/The user already follow this storyteller/Error with current_user_id parameter
   /users/{userid}/unfollow:
     post:
-      summary: Let the user identified by current_user_id unfollows the user identified by userid
+      description: Let the user identified by current_user_id unfollows the user identified by userid
       operationId: unfollowUser
       parameters:
         - in: path
@@ -126,9 +126,8 @@ paths:
           description: A user can't unfollow himself/The user should follow the other user before unfollowing/Error with current_user_id parameter
   /users/{userid}/followers:
     get:
-      summary: Return the list of users following the user identified by userid
+      description: Return the list of users following the user identified by userid
       operationId: getFollowers
-      description: Return a JSON array of JSON objects which represent users followed by the user identified by userid
       parameters:
         - in: path
           name: userid
@@ -144,8 +143,29 @@ paths:
             type: array
             items: 
               $ref: '#/definitions/user'
-        '404':
+        '400':
           description: The specified userid does not exist
+  /search:
+    get:
+      description: Return the list of all matching users
+      operationId: search
+      parameters:
+        - in: query
+          name: query
+          required: True
+          description: The name or surname of the searched user
+          type: string
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: A JSON array of JSON objects containing users list
+          schema: 
+            type: array
+            items: 
+              $ref: '#/definitions/user'
+        '400':
+            description: Error with query parameter
 definitions:
   user:
     type: object
