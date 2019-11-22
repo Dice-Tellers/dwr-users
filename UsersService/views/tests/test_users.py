@@ -252,3 +252,13 @@ class TestUsers(flask_testing.TestCase):
         # The user does not exist
         reply = self.client.get('users/8/followers')
         self.assertEqual(reply.status_code, 404)
+    
+    def test_user_stats(self):
+        reply = self.client.get('users/1/stats')
+        self.assertEqual(reply.status_code, 200)
+        body = json.loads(str(reply.data, 'utf8'))
+        self.assertEqual(body, {"num_followers": 0, "followers_last_month": 0})
+
+        # The user does not exist
+        reply = self.client.get('users/4/stats')
+        self.assertEqual(reply.status_code, 404)
