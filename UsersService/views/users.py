@@ -5,6 +5,7 @@ from flask import Blueprint
 from flask import jsonify, request, abort, make_response
 from flakon import SwaggerBlueprint
 from UsersService.database import db, User, Follower
+from sqlalchemy import and_
 
 YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
 users = SwaggerBlueprint('users', '__name__', swagger_spec=YML)
@@ -165,6 +166,25 @@ def _followers(userid):
         usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=userid)
         return jsonify([user.serialize() for user in usrs])        
 
+# Return the statistics of a user
+@users.operation('getUserStats')
+def _user_stats(user_id):
+    # Check user existence
+    if not _check_user_existence(user_id):
+        abort(404, 'The specified userid does not exist')
+    # Return statistics
+    else:
+        num_followers = User.query.filter_by(id=user_id).first().follower_counter
+        actual_month = datetime.date.today()
+        first_day = actual_month.replace(day = 1)
+        this_month_follower = Follower.query.filter(and_(Follower.follower_id == user_id, Follower.creation_date >= first_day)).count()
+
+        result = {
+            "num_followers": num_followers,
+            "followers_last_month": this_month_follower
+        }
+
+        return jsonify(result) 
 
 # Return True if the user identified by userid exists
 def _check_user_existence(userid):
