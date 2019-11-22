@@ -141,6 +141,25 @@ paths:
               $ref: '#/definitions/user'
         '404':
           description: The specified userid does not exist
+  /users/{user_id}/stats:
+    get:
+      description: Return user stats
+      operationId: getUserStats
+      parameters:
+        - in: path
+          name: user_id
+          required: True
+          description: The value that identifies the user
+          type: integer
+      produces:
+          - application/json
+      responses:
+        '200':
+          description: Return a JSON containing the user statistics
+        '404':
+          description: The specified userid does not exist
+
+
 definitions:
   user:
     type: object

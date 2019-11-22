@@ -74,6 +74,9 @@ class Follower(db.Model):
     followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     followed = relationship('User', foreign_keys='Follower.followed_id')
 
+    date_format = "%Y %m %d %H:%M"
+    creation_date = db.Column(db.DateTime, default = dt.datetime.strptime(dt.datetime.now().strftime(date_format), date_format))
+
     __table_args__ = (CheckConstraint(followed_id != follower_id, name='check_follow_myself'), {})
 
 
