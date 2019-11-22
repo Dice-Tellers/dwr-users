@@ -36,7 +36,7 @@ paths:
         '201':
           description: Success
         '400':
-          description: Error with one parameters/Date of birth can be greater than today
+          description: Error with one parameters/Date of birth can not be greater than today
         '406':
           description: The email address is already being used
   /users/login:
@@ -126,7 +126,7 @@ paths:
           description: A user can't unfollow himself/The user should follow the other user before unfollowing/Error with current_user_id parameter
   /users/{userid}/followers:
     get:
-      summary: Return the list of users followed by a user
+      summary: Return the list of users following the user identified by userid
       operationId: getFollowers
       description: Return a JSON array of JSON objects which represent users followed by the user identified by userid
       parameters:
@@ -139,7 +139,7 @@ paths:
           - application/json
       responses:
         '200':
-          description: A JSON array of JSON objects which represent the users followed by the user identified by userid
+          description: A JSON array of JSON objects which represent the users following the user identified by userid
           schema:
             type: array
             items: 

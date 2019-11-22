@@ -29,8 +29,8 @@ def _create_user():
         if user is not None:
             abort(406, 'The email address is already being used')
         # check date of birth < today
-        dateofbirth = datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y').date()
-        if dateofbirth < date.today():
+        dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y')
+        if dateofbirth > datetime.datetime.today():
             abort(400, 'Date of birth can be greater than today')
         
         # create new user
@@ -56,21 +56,20 @@ def _login():
     try:
         email = request.args.get('email')
         password = request.args.get('password')
-        print(password)
-
-        # Check user existence
-        q = db.session.query(User).filter(User.email == email)
-        user = q.first()
-        if user is None:
-            abort(404, 'The specified email does not exist')
-
-        # Check password
-        if not user.authenticate(password):
-            abort(400, 'Password uncorrect')
-
-    # If values in request body aren't well-formed
     except ValueError:
-        abort(404, 'Error with one parameters')
+        abort(400, 'Error with one parameters')
+    if email is None or password is None:
+        abort(400, 'Error with one parameters')
+
+    # Check user existence
+    q = db.session.query(User).filter(User.email == email)
+    user = q.first()
+    if user is None:
+        abort(404, 'The specified email does not exist')
+
+    # Check password
+    if not user.authenticate(password):
+        abort(400, 'Password uncorrect')
 
     return make_response("Email and password ok", 200)
 
@@ -94,11 +93,13 @@ def _wall(userid):
 # Let a user follows another one
 @users.operation('followUser')
 def _follow_user(userid):
-    current_user_id = -1
+    current_user_id = None
     try:
         current_user_id = int(request.args.get('current_user_id'))
     # If values in request body aren't well-formed
-    except Exception:
+    except ValueError:
+        abort(400, "Error with current_user_id parameter")
+    if current_user_id is None:
         abort(400, "Error with current_user_id parameter")
 
     # Check users existence
@@ -107,7 +108,7 @@ def _follow_user(userid):
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
-    if userid == current_user_id:
+    if int(userid) == current_user_id:
         abort(400, "A user can't follow himself")
     if _check_follower_existence(current_user_id, userid):
         abort(400, "The user already follow this storyteller")
@@ -127,11 +128,13 @@ def _follow_user(userid):
 # Let a user unfollows another one
 @users.operation('unfollowUser')
 def _unfollow_user(userid):
-    current_user_id = -1
+    current_user_id = None
     try:
         current_user_id = int(request.args.get('current_user_id'))
     # If values in request body aren't well-formed
     except Exception:
+        abort(400, "Error with current_user_id parameter")
+    if current_user_id is None:
         abort(400, "Error with current_user_id parameter")
 
     # Check user existence
@@ -140,7 +143,7 @@ def _unfollow_user(userid):
     if not _check_user_existence(current_user_id):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
-    if userid == current_user_id:
+    if int(userid) == current_user_id:
         abort(400, "A user can't unfollow himself")
     if not _check_follower_existence(current_user_id, userid):
         abort(400, "The user should follow the other user before unfollowing")
@@ -152,7 +155,7 @@ def _unfollow_user(userid):
     return make_response("User unfollowed", 200)
 
 
-# Return the list of users followed by a user
+# Return the list of users following the user identified by userid
 @users.operation('getFollowers')
 def _followers(userid):
     # Check user existence
