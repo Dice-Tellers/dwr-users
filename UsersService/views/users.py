@@ -31,8 +31,8 @@ def _create_user():
         # check date of birth < today
         dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y')
         if dateofbirth > datetime.datetime.today():
-            abort(400, 'Date of birth can be greater than today')
-        
+            abort(400, 'Date of birth can not be greater than today')
+      
         # create new user
         new_user = User()
         new_user.firstname = user_data['firstname']
@@ -44,8 +44,8 @@ def _create_user():
         db.session.add(new_user)
         db.session.commit()
     # If values in request body aren't well-formed
-    except ValueError:
-        abort(400, 'Error with one parameters')
+    except ValueError or KeyError:
+        abort(400, 'Error with one parameter')
 
     return make_response("New user created", 201)
 
@@ -54,22 +54,20 @@ def _create_user():
 @users.operation('loginUser')
 def _login():
     try:
-        email = request.args.get('email')
-        password = request.args.get('password')
-    except ValueError:
-        abort(400, 'Error with one parameters')
-    if email is None or password is None:
-        abort(400, 'Error with one parameters')
+        user_data = request.get_json(request)
+    
+        # Check user existence
+        q = db.session.query(User).filter(User.email == user_data['email'])
+        user = q.first()
+        if user is None:
+            abort(404, 'The specified email does not exist')
 
-    # Check user existence
-    q = db.session.query(User).filter(User.email == email)
-    user = q.first()
-    if user is None:
-        abort(404, 'The specified email does not exist')
-
-    # Check password
-    if not user.authenticate(password):
-        abort(400, 'Password uncorrect')
+        # Check password
+        if not user.authenticate(user_data['password']):
+            abort(400, 'Password uncorrect')
+    
+    except KeyError:
+        abort(400, 'Error with one parameter')
 
     return make_response("Email and password ok", 200)
 
