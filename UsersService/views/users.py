@@ -48,7 +48,7 @@ def _create_user():
     except ValueError or KeyError:
         abort(400, 'Error with one parameter')
 
-    return make_response("New user created", 201)
+    return jsonify(description="New user created"), 201
 
 
 # Check email and password of a user and return its id
@@ -68,7 +68,7 @@ def _login():
             abort(400, 'Password uncorrect')
 
         # Return the id of the user
-        return jsonify({'userid': user.id})
+        return jsonify(user.serialize())
     
     except KeyError:
         abort(400, 'Error with one parameter')
