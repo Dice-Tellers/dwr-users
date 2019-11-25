@@ -171,24 +171,29 @@ def _followers(userid):
 @users.operation('search')
 def _search():
     try:
+        # Retrive parameter inserted in the search
         query = request.args.get('query')
 
+        # If it is None return Error, otherwise delete withespace in the string
         if query is None:
-            abort(400, 'Error with one parameters')
+            abort(400, 'Error with query parameter')
         else:
             query = query.strip()
+
         usrs = []
 
+        # Check if there are user with the specified name or surname
         if query != '':
             usrs = User.query.filter(or_(User.firstname.like('%' + query + '%'), User.lastname.like('%' + query + '%'))).all()
         
+        # Return the result of the search
         if len(usrs) > 0:
             return jsonify([user.serialize() for user in usrs])
         else:
             return jsonify({}), 204 
     # If values in request body aren't well-formed
     except ValueError:
-        abort(400, 'Error with query parameters')   
+        abort(400, 'Error with query parameter')   
 
 
 # Return True if the user identified by userid exists

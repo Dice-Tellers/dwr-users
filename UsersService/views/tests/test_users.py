@@ -47,7 +47,29 @@ class TestUsers(flask_testing.TestCase):
                 db.session.add(example)
                 db.session.commit()
 
+            user = db.session.query(User).filter(User.email == 'thebest@example.com').first()
+            if user is None:
+                example = User()
+                example.firstname = 'Cantagallo'
+                example.lastname = 'TheBest'
+                example.email = 'thebest@example.com'
+                example.dateofbirth = datetime.datetime(2010, 10, 8)
+                example.is_admin = True
+                example.set_password('p')
+                db.session.add(example)
+                db.session.commit()
 
+            user = db.session.query(User).filter(User.email == 'theworst@example.com').first()
+            if user is None:
+                example = User()
+                example.firstname = 'TheWorst'
+                example.lastname = 'Rooster'
+                example.email = 'theworst@example.com'
+                example.dateofbirth = datetime.datetime(2010, 10, 2)
+                example.is_admin = True
+                example.set_password('p')
+                db.session.add(example)
+                db.session.commit()
 
     # Executed at end of each test
     def tearDown(self) -> None:
@@ -60,7 +82,9 @@ class TestUsers(flask_testing.TestCase):
         body = json.loads(str(reply.data, 'utf8'))
         self.assertEqual(body, [
             {"email": "example@example.com", "firstname": "Admin", "id": 1, "lastname": "Admin"},
-            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"}
+            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"},
+            {"email": "thebest@example.com", "firstname": "Cantagallo", "id": 3, "lastname": "TheBest"},
+            {"email": "theworst@example.com", "firstname": "TheWorst", "id": 4, "lastname": "Rooster"}
         ])
 
     #TODO
@@ -232,3 +256,54 @@ class TestUsers(flask_testing.TestCase):
         # The user does not exist
         reply = self.client.get('users/8/followers')
         self.assertEqual(reply.status_code, 404)
+
+    def test_search_exist_firstname(self):
+        response = self.client.get('/search?query=Admin')
+        body = json.loads(str(response.data, 'utf8'))
+        self.assertEqual(body, [
+            {"email": "example@example.com", "firstname": "Admin", "id": 1, "lastname": "Admin"}])
+
+    def test_search_exist_lastname(self):
+        response = self.client.get('/search?query=TheBest')
+        body = json.loads(str(response.data, 'utf8'))
+        self.assertEqual(body, [
+            {"email": "thebest@example.com", "firstname": "Cantagallo", "id": 3, "lastname": "TheBest"}])
+    
+    def test_search_double_exist_firstname(self):
+        response = self.client.get('/search?query=Cantagallo')
+        body = json.loads(str(response.data, 'utf8'))
+        self.assertEqual(body, [
+            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"},
+            {"email": "thebest@example.com", "firstname": "Cantagallo", "id": 3, "lastname": "TheBest"}])
+
+    def test_search_double_exist_lastname(self):
+        response = self.client.get('/search?query=Rooster')
+        body = json.loads(str(response.data, 'utf8'))
+        self.assertEqual(body, [
+            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"},
+            {"email": "theworst@example.com", "firstname": "TheWorst", "id": 4, "lastname": "Rooster"}])
+
+    def test_search_not_exist(self):
+        response = self.client.get('/search?query=notexist')
+        self.assertStatus(response, 204)
+
+    def test_search_bad_request(self):
+        # NO parameter
+        response = self.client.get('/search?=notexist')
+        body = json.loads(str(response.data, 'utf8'))
+
+        self.assertStatus(response, 400)
+        self.assertEqual(body['description'],
+                         'Error with query parameter')
+
+        # Wrong parameter
+        response = self.client.get('/search?notquery=notexist')
+        body = json.loads(str(response.data, 'utf8'))
+
+        self.assertStatus(response, 400)
+        self.assertEqual(body['description'],
+                         'Error with query parameter')
+    
+    def test_search_empty_request(self):
+        response = self.client.get('/search?query=')        
+        self.assertStatus(response, 204)
