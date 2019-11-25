@@ -23,6 +23,7 @@ def _users():
 def _create_user():    
     try:
         user_data = request.get_json(request)
+        print(user_data)
 
         # check user existence
         q = db.session.query(User).filter(User.email == user_data['email'])
@@ -30,7 +31,7 @@ def _create_user():
         if user is not None:
             abort(406, 'The email address is already being used')
         # check date of birth < today
-        dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y')
+        dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%Y-%m-%d')
         if dateofbirth > datetime.datetime.today():
             abort(400, 'Date of birth can not be greater than today')
       
@@ -45,7 +46,8 @@ def _create_user():
         db.session.add(new_user)
         db.session.commit()
     # If values in request body aren't well-formed
-    except ValueError or KeyError:
+    except (ValueError, KeyError) as e:
+        print(e)
         abort(400, 'Error with one parameter')
 
     return jsonify(description="New user created"), 201
