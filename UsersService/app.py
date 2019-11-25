@@ -23,33 +23,7 @@ def create_app(database=DEFAULT_DB, wtf=False, login_disabled=False):
     db.init_app(flask_app)
     db.create_all(app=flask_app)
 
-    with flask_app.app_context():
-        q = db.session.query(User).filter(User.email == 'example@example.com')
-        user = q.first()
-        if user is None:
-            example = User()
-            example.firstname = 'Admin'
-            example.lastname = 'Admin'
-            example.email = 'example@example.com'
-            example.dateofbirth = datetime.datetime(2010, 10, 5)
-            example.is_admin = True
-            example.set_password('admin')
-            db.session.add(example)
-            db.session.commit()
-
-        q = db.session.query(User).filter(User.email == 'cantagallo@example.com')
-        user = q.first()
-        if user is None:
-            example = User()
-            example.firstname = 'Cantagallo'
-            example.lastname = 'Rooster'
-            example.email = 'cantagallo@example.com'
-            example.dateofbirth = datetime.datetime(2010, 10, 10)
-            example.is_admin = True
-            example.set_password('p')
-            db.session.add(example)
-            db.session.commit()
-
     return flask_app
+
 
 app = create_app()
