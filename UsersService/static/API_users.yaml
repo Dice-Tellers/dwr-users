@@ -56,10 +56,7 @@ paths:
         '200':
           description: Email and password ok
           schema:
-            type: object
-            properties:
-              id:
-                type: integer
+            $ref: '#/definitions/user'
         '404':
           description: The specified email does not exist
         '400':

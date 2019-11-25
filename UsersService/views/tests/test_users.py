@@ -76,7 +76,7 @@ class TestUsers(flask_testing.TestCase):
             'password'      : 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
-        self.assertEqual(reply.status_code, 406)
+        self.assertStatus(reply, 406)
 
         # Date of birth > today
         data = json.dumps({
@@ -87,7 +87,7 @@ class TestUsers(flask_testing.TestCase):
             'password'      : 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Date of birth can not be greater than today')
 
         # Bad parameters
@@ -98,7 +98,7 @@ class TestUsers(flask_testing.TestCase):
             'password'      : 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Error with one parameter')
 
         # Correct request
@@ -110,7 +110,7 @@ class TestUsers(flask_testing.TestCase):
             'password'      : 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
-        self.assertEqual(reply.status_code, 201)
+        self.assertStatus(reply, 201)
         # Check new user exists
         user = db.session.query(User).filter(User.email == 'Prova').first()
         self.assertTrue(user)
@@ -124,7 +124,9 @@ class TestUsers(flask_testing.TestCase):
         })
         reply = self.client.post('/users/login', data=data)
         body = json.loads(str(reply.data, 'utf8'))
-        self.assertEqual(body, {'userid': 2})
+        self.assertEqual(body,
+            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"}
+        )
 
         # Password uncorrect
         data = json.dumps({
@@ -132,7 +134,7 @@ class TestUsers(flask_testing.TestCase):
             'password'  : 'wrong'
         })
         reply = self.client.post('/users/login', data=data)
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Password uncorrect')
 
         # Email does not exist
@@ -141,14 +143,14 @@ class TestUsers(flask_testing.TestCase):
             'password'  : 'p'
         })
         reply = self.client.post('/users/login', data=data)
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
 
         # Bad parameters
         data = json.dumps({
             'email'     : 'cantagallo@example.com',
         })
         reply = self.client.post('/users/login', data=data)
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Error with one parameter')
 
     def test_user_data(self):
@@ -163,12 +165,12 @@ class TestUsers(flask_testing.TestCase):
 
         # User does not exist
         reply = self.client.get('users/6')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
 
     def test_follow(self):
         # Requests with bad parameters
         reply = self.client.post('users/1/follow?current_user_id=')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Error with current_user_id parameter')
 
         reply = self.client.post('users/1/follow?current_user_id=aa')
@@ -177,72 +179,84 @@ class TestUsers(flask_testing.TestCase):
 
         # The user to follow does not exist
         reply = self.client.post('users/6/follow?current_user_id=2')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
         self.assertDescription(reply, 'The specified userid does not exist')
 
         # The follower does not exists
         reply = self.client.post('users/1/follow?current_user_id=8')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
         self.assertDescription(reply, 'The specified current_user_id does not exist')
 
         # The user try to follow himself
         reply = self.client.post('users/1/follow?current_user_id=1')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, "A user can't follow himself")
 
+        # Get follower_counter of the user 1
+        user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
+        follower_counter_old = user.follower_counter
         # Correct request
         reply = self.client.post('users/1/follow?current_user_id=2')
-        self.assertEqual(reply.status_code, 200)
-        #TODO: check if follower_counter has been incremented
+        self.assertStatus(reply, 200)
+        # Check if follower_counter has been incremented
+        user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
+        follower_counter_new = user.follower_counter
+        self.assertEqual(follower_counter_new, (follower_counter_old+1))
 
         # Try to follow again the same user
         reply = self.client.post('users/1/follow?current_user_id=2')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'The user already follow this storyteller')
 
     def test_unfollow(self):
         # Requests with bad parameters
         reply = self.client.post('users/1/unfollow?current_user_id=')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Error with current_user_id parameter')
 
         reply = self.client.post('users/1/unfollow?current_user_id=aa')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'Error with current_user_id parameter')
 
         # The user to follow does not exist
         reply = self.client.post('users/6/unfollow?current_user_id=2')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
         self.assertDescription(reply, 'The specified userid does not exist')
 
         # The follower does not exists
         reply = self.client.post('users/1/unfollow?current_user_id=8')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
         self.assertDescription(reply, 'The specified current_user_id does not exist')
 
         # The user try to unfollow himself
         reply = self.client.post('users/1/unfollow?current_user_id=1')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, "A user can't unfollow himself")
 
         # Let user 2 follows user 1
         reply = self.client.post('users/1/follow?current_user_id=2')
-        self.assertEqual(reply.status_code, 200)
+        self.assertStatus(reply, 200)
 
+        # Get follower_counter of the user 1
+        user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
+        follower_counter_old = user.follower_counter
         # Correct request
         reply = self.client.post('users/1/unfollow?current_user_id=2')
-        self.assertEqual(reply.status_code, 200)
-        #TODO: check if follower_counter has been decremented
+        self.assertStatus(reply, 200)
+        # Check if follower_counter has been decremented
+        user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
+        follower_counter_new = user.follower_counter
+        self.assertEqual(follower_counter_new, (follower_counter_old-1))
 
         # Try to unfollow again the same user
         reply = self.client.post('users/1/unfollow?current_user_id=2')
-        self.assertEqual(reply.status_code, 400)
+        self.assertStatus(reply, 400)
         self.assertDescription(reply, 'The user should follow the other user before unfollowing')
 
     def test_followers(self):
         # Let user 2 follows user 1
         reply = self.client.post('users/1/follow?current_user_id=2')
-        self.assertEqual(reply.status_code, 200)
+        self.assertStatus(reply, 200)
 
         # Get user 1 followers
         reply = self.client.get('users/1/followers')
@@ -253,7 +267,7 @@ class TestUsers(flask_testing.TestCase):
 
         # The user does not exist
         reply = self.client.get('users/8/followers')
-        self.assertEqual(reply.status_code, 404)
+        self.assertStatus(reply, 404)
     
     def test_user_stats(self):
         reply = self.client.get('users/1/stats')

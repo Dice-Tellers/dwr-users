@@ -2,7 +2,7 @@ import datetime
 import os
 
 from flask import Blueprint
-from flask import jsonify, request, abort, make_response
+from flask import jsonify, request, abort
 from flakon import SwaggerBlueprint
 from UsersService.database import db, User, Follower
 from sqlalchemy import and_
@@ -67,8 +67,8 @@ def _login():
         if not user.authenticate(user_data['password']):
             abort(400, 'Password uncorrect')
 
-        # Return the id of the user
-        return jsonify(user.serialize())
+        # Return the user
+        return jsonify(user.serialize()), 200
     
     except KeyError:
         abort(400, 'Error with one parameter')
@@ -122,7 +122,7 @@ def _follow_user(userid):
     db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter + 1})
     db.session.commit()
 
-    return make_response("User followed", 200)
+    return jsonify(description="User followed"), 200
 
 
 # Let a user unfollows another one
@@ -152,7 +152,7 @@ def _unfollow_user(userid):
     db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter - 1})
     db.session.commit()
 
-    return make_response("User unfollowed", 200)
+    return jsonify(description="User unfollowed"), 200
 
 
 # Return the list of users following the user identified by userid
