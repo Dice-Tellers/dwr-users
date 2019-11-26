@@ -2,8 +2,9 @@ import datetime
 import os
 
 from flakon import SwaggerBlueprint
-from sqlalchemy import or_, and_
 from flask import jsonify, request, abort
+from sqlalchemy import or_, and_
+
 from UsersService.database import db, User, Follower
 
 YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
@@ -192,6 +193,7 @@ def _user_stats(user_id):
 
     # Return True if the user identified by userid exists
 
+
 # Return the result of the search in the user list
 @users.operation('search')
 def _search():
@@ -209,16 +211,17 @@ def _search():
 
         # Check if there are user with the specified name or surname
         if query != '':
-            usrs = User.query.filter(or_(User.firstname.like('%' + query + '%'), User.lastname.like('%' + query + '%'))).all()
-        
+            usrs = User.query.filter(
+                or_(User.firstname.like('%' + query + '%'), User.lastname.like('%' + query + '%'))).all()
+
         # Return the result of the search
         if len(usrs) > 0:
             return jsonify([user.serialize() for user in usrs])
         else:
-            return jsonify({}), 204 
-    # If values in request body aren't well-formed
+            return jsonify({}), 204
+            # If values in request body aren't well-formed
     except ValueError:
-        abort(400, 'Error with query parameter')   
+        abort(400, 'Error with query parameter')
 
 
 def _check_user_existence(userid):
