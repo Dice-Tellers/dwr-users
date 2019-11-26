@@ -71,7 +71,7 @@ class TestUsers(flask_testing.TestCase):
         data = json.dumps({
             'firstname'     : 'Natalia',
             'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%d/%m/%Y'),
+            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
             'email'         : 'cantagallo@example.com',
             'password'      : 'Prova'
         })
@@ -82,7 +82,7 @@ class TestUsers(flask_testing.TestCase):
         data = json.dumps({
             'firstname'     : 'Prova',
             'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(3000, 10, 5).strftime('%d/%m/%Y'),
+            'dateofbirth'   :  datetime.datetime(2050, 10, 5).strftime('%Y-%m-%d'),
             'email'         : 'Prova',
             'password'      : 'Prova'
         })
@@ -105,7 +105,7 @@ class TestUsers(flask_testing.TestCase):
         data = json.dumps({
             'firstname'     : 'Prova',
             'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%d/%m/%Y'),
+            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
             'email'         : 'Prova',
             'password'      : 'Prova'
         })

@@ -101,8 +101,6 @@ def _follow_user(userid):
     # If values in request body aren't well-formed
     except ValueError:
         abort(400, "Error with current_user_id parameter")
-    if current_user_id is None:
-        abort(400, "Error with current_user_id parameter")
 
     # Check users existence
     if not _check_user_existence(userid):
@@ -135,8 +133,6 @@ def _unfollow_user(userid):
         current_user_id = int(request.args.get('current_user_id'))
     # If values in request body aren't well-formed
     except Exception:
-        abort(400, "Error with current_user_id parameter")
-    if current_user_id is None:
         abort(400, "Error with current_user_id parameter")
 
     # Check user existence
