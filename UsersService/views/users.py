@@ -111,9 +111,9 @@ def _follow_user(userid):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
     if int(userid) == current_user_id:
-        abort(400, "A user can't follow himself")
+        abort(400, "Can't follow yourself")
     if _check_follower_existence(current_user_id, userid):
-        abort(400, "The user already follow this storyteller")
+        abort(400, "You already follow this storyteller")
 
     new_follower = Follower()
     new_follower.follower_id = current_user_id
@@ -146,9 +146,9 @@ def _unfollow_user(userid):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
     if int(userid) == current_user_id:
-        abort(400, "A user can't unfollow himself")
+        abort(400, "You can't follow yourself")
     if not _check_follower_existence(current_user_id, userid):
-        abort(400, "The user should follow the other user before unfollowing")
+        abort(400, "You should follow this storyteller before unfollowing")
 
     Follower.query.filter_by(follower_id=current_user_id, followed_id=userid).delete()
     db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter - 1})
