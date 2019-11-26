@@ -5,4 +5,4 @@ HOME_URL = "http://127.0.0.1:5000/"
 TEST_DB = 'sqlite:///:memory:'
 
 # Database "storytellers.db"
-DEFAULT_DB = 'sqlite:///storytellers_users.db'
+DEFAULT_DB = 'sqlite:///users-service.db'

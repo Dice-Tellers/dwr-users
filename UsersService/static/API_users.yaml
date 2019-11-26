@@ -36,27 +36,27 @@ paths:
         '201':
           description: Success
         '400':
-          description: Error with one parameters/Date of birth can not be greater than today
+          description: Error with one parameter/Date of birth can not be greater than today
         '406':
           description: The email address is already being used
   /users/login:
     post:
       description: Check email and password of a user
       operationId: loginUser
+      consumes:
+        - application/json
       parameters:
-        - in: query
-          name: email
-          required: True
-          description: The email of the user
-          type: string
-        - in: query
-          name: password
-          required: True
-          description: The password of the user
-          type: string
+        - in: body
+          name: login_data
+          schema:
+            $ref: '#/definitions/login_data'
+      produces:
+        - application/json
       responses:
         '200':
           description: Email and password ok
+          schema:
+            $ref: '#/definitions/user'
         '404':
           description: The specified email does not exist
         '400':
@@ -145,6 +145,7 @@ paths:
               $ref: '#/definitions/user'
         '400':
           description: The specified userid does not exist
+
   /search:
     get:
       description: Return the list of all matching users
@@ -166,6 +167,25 @@ paths:
               $ref: '#/definitions/user'
         '400':
             description: Error with query parameter
+
+  /users/{user_id}/stats:
+    get:
+      description: Return user stats
+      operationId: getUserStats
+      parameters:
+        - in: path
+          name: user_id
+          required: True
+          description: The value that identifies the user
+          type: integer
+      produces:
+          - application/json
+      responses:
+        '200':
+          description: Return a JSON containing the user statistics
+        '404':
+          description: The specified userid does not exist
+
 definitions:
   user:
     type: object
@@ -210,3 +230,10 @@ definitions:
       dateofbirth:
         type: string
         description: dd/mm/yyyy format
+  login_data:
+    type: object
+    properties:
+      email:
+        type: string
+      password:
+        type: string

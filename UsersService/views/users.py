@@ -1,10 +1,9 @@
 import datetime
 import os
 
-from flask import Blueprint
-from flask import jsonify, request, abort, make_response
 from flakon import SwaggerBlueprint
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
+from flask import jsonify, request, abort
 from UsersService.database import db, User, Follower
 
 YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
@@ -20,9 +19,10 @@ def _users():
 
 # Create a new user
 @users.operation('createUser')
-def _create_user():    
+def _create_user():
     try:
         user_data = request.get_json(request)
+        print(user_data)
 
         # check user existence
         q = db.session.query(User).filter(User.email == user_data['email'])
@@ -30,10 +30,10 @@ def _create_user():
         if user is not None:
             abort(406, 'The email address is already being used')
         # check date of birth < today
-        dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%d/%m/%Y')
+        dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%Y-%m-%d')
         if dateofbirth > datetime.datetime.today():
-            abort(400, 'Date of birth can be greater than today')
-        
+            abort(400, 'Date of birth can not be greater than today')
+
         # create new user
         new_user = User()
         new_user.firstname = user_data['firstname']
@@ -45,34 +45,34 @@ def _create_user():
         db.session.add(new_user)
         db.session.commit()
     # If values in request body aren't well-formed
-    except ValueError:
-        abort(400, 'Error with one parameters')
+    except (ValueError, KeyError) as e:
+        print(e)
+        abort(400, 'Error with one parameter')
 
-    return make_response("New user created", 201)
+    return jsonify(description="New user created"), 201
 
 
-# Check email and password of a user
+# Check email and password of a user and return its id
 @users.operation('loginUser')
 def _login():
     try:
-        email = request.args.get('email')
-        password = request.args.get('password')
-    except ValueError:
-        abort(400, 'Error with one parameters')
-    if email is None or password is None:
-        abort(400, 'Error with one parameters')
+        user_data = request.get_json(request)
 
-    # Check user existence
-    q = db.session.query(User).filter(User.email == email)
-    user = q.first()
-    if user is None:
-        abort(404, 'The specified email does not exist')
+        # Check user existence
+        q = db.session.query(User).filter(User.email == user_data['email'])
+        user = q.first()
+        if user is None:
+            abort(404, 'The specified email does not exist')
 
-    # Check password
-    if not user.authenticate(password):
-        abort(400, 'Password uncorrect')
+        # Check password
+        if not user.authenticate(user_data['password']):
+            abort(400, 'Password uncorrect')
 
-    return make_response("Email and password ok", 200)
+        # Return the user
+        return jsonify(user.serialize()), 200
+
+    except KeyError:
+        abort(400, 'Error with one parameter')
 
 
 # Return informations about a user
@@ -110,9 +110,9 @@ def _follow_user(userid):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
     if int(userid) == current_user_id:
-        abort(400, "A user can't follow himself")
+        abort(400, "Can't follow yourself")
     if _check_follower_existence(current_user_id, userid):
-        abort(400, "The user already follow this storyteller")
+        abort(400, "You already follow this storyteller")
 
     new_follower = Follower()
     new_follower.follower_id = current_user_id
@@ -123,7 +123,7 @@ def _follow_user(userid):
     db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter + 1})
     db.session.commit()
 
-    return make_response("User followed", 200)
+    return jsonify(description="User followed"), 200
 
 
 # Let a user unfollows another one
@@ -145,15 +145,15 @@ def _unfollow_user(userid):
         abort(404, 'The specified current_user_id does not exist')
     # Check correctness
     if int(userid) == current_user_id:
-        abort(400, "A user can't unfollow himself")
+        abort(400, "You can't follow yourself")
     if not _check_follower_existence(current_user_id, userid):
-        abort(400, "The user should follow the other user before unfollowing")
+        abort(400, "You should follow this storyteller before unfollowing")
 
     Follower.query.filter_by(follower_id=current_user_id, followed_id=userid).delete()
     db.session.query(User).filter_by(id=userid).update({'follower_counter': User.follower_counter - 1})
     db.session.commit()
 
-    return make_response("User unfollowed", 200)
+    return jsonify(description="User unfollowed"), 200
 
 
 # Return the list of users following the user identified by userid
@@ -165,7 +165,32 @@ def _followers(userid):
     # Return followers list
     else:
         usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=userid)
-        return jsonify([user.serialize() for user in usrs])        
+        return jsonify([user.serialize() for user in usrs])
+
+    # Return the statistics of a user
+
+
+@users.operation('getUserStats')
+def _user_stats(user_id):
+    # Check user existence
+    if not _check_user_existence(user_id):
+        abort(404, 'The specified userid does not exist')
+    # Return statistics
+    else:
+        num_followers = User.query.filter_by(id=user_id).first().follower_counter
+        actual_month = datetime.date.today()
+        first_day = actual_month.replace(day=1)
+        this_month_follower = Follower.query.filter(
+            and_(Follower.follower_id == user_id, Follower.creation_date >= first_day)).count()
+
+        result = {
+            "num_followers": num_followers,
+            "followers_last_month": this_month_follower
+        }
+
+        return jsonify(result)
+
+    # Return True if the user identified by userid exists
 
 # Return the result of the search in the user list
 @users.operation('search')
@@ -196,10 +221,10 @@ def _search():
         abort(400, 'Error with query parameter')   
 
 
-# Return True if the user identified by userid exists
 def _check_user_existence(userid):
     user = db.session.query(User).filter(User.id == userid)
     return user.first() is not None
+
 
 # Return True if the user identified by follower_id follows the user identified by followed_id
 def _check_follower_existence(follower_id, followed_id):
