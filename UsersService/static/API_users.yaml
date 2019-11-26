@@ -143,8 +143,31 @@ paths:
             type: array
             items: 
               $ref: '#/definitions/user'
-        '404':
+        '400':
           description: The specified userid does not exist
+
+  /search:
+    get:
+      description: Return the list of all matching users
+      operationId: search
+      parameters:
+        - in: query
+          name: query
+          required: True
+          description: The name or surname of the searched user
+          type: string
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: A JSON array of JSON objects containing users list
+          schema: 
+            type: array
+            items: 
+              $ref: '#/definitions/user'
+        '400':
+            description: Error with query parameter
+
   /users/{user_id}/stats:
     get:
       description: Return user stats
@@ -162,7 +185,6 @@ paths:
           description: Return a JSON containing the user statistics
         '404':
           description: The specified userid does not exist
-
 
 definitions:
   user:
