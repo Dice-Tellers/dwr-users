@@ -1,11 +1,11 @@
 import datetime
 import os
 
-from flask import Blueprint
-from flask import jsonify, request, abort
 from flakon import SwaggerBlueprint
-from UsersService.database import db, User, Follower
+from flask import jsonify, request, abort
 from sqlalchemy import and_
+
+from UsersService.database import db, User, Follower
 
 YML = os.path.join(os.path.dirname(__file__), '..', 'static', 'API_users.yaml')
 users = SwaggerBlueprint('users', '__name__', swagger_spec=YML)
@@ -20,7 +20,7 @@ def _users():
 
 # Create a new user
 @users.operation('createUser')
-def _create_user():    
+def _create_user():
     try:
         user_data = request.get_json(request)
         print(user_data)
@@ -34,7 +34,7 @@ def _create_user():
         dateofbirth = datetime.datetime.strptime(user_data['dateofbirth'], '%Y-%m-%d')
         if dateofbirth > datetime.datetime.today():
             abort(400, 'Date of birth can not be greater than today')
-      
+
         # create new user
         new_user = User()
         new_user.firstname = user_data['firstname']
@@ -58,7 +58,7 @@ def _create_user():
 def _login():
     try:
         user_data = request.get_json(request)
-    
+
         # Check user existence
         q = db.session.query(User).filter(User.email == user_data['email'])
         user = q.first()
@@ -71,7 +71,7 @@ def _login():
 
         # Return the user
         return jsonify(user.serialize()), 200
-    
+
     except KeyError:
         abort(400, 'Error with one parameter')
 
@@ -100,6 +100,8 @@ def _follow_user(userid):
         current_user_id = int(request.args.get('current_user_id'))
     # If values in request body aren't well-formed
     except ValueError:
+        abort(400, "Error with current_user_id parameter")
+    if current_user_id is None:
         abort(400, "Error with current_user_id parameter")
 
     # Check users existence
@@ -134,6 +136,8 @@ def _unfollow_user(userid):
     # If values in request body aren't well-formed
     except Exception:
         abort(400, "Error with current_user_id parameter")
+    if current_user_id is None:
+        abort(400, "Error with current_user_id parameter")
 
     # Check user existence
     if not _check_user_existence(userid):
@@ -162,9 +166,11 @@ def _followers(userid):
     # Return followers list
     else:
         usrs = User.query.join(Follower, User.id == Follower.follower_id).filter_by(followed_id=userid)
-        return jsonify([user.serialize() for user in usrs])        
+        return jsonify([user.serialize() for user in usrs])
 
-# Return the statistics of a user
+    # Return the statistics of a user
+
+
 @users.operation('getUserStats')
 def _user_stats(user_id):
     # Check user existence
@@ -174,20 +180,24 @@ def _user_stats(user_id):
     else:
         num_followers = User.query.filter_by(id=user_id).first().follower_counter
         actual_month = datetime.date.today()
-        first_day = actual_month.replace(day = 1)
-        this_month_follower = Follower.query.filter(and_(Follower.follower_id == user_id, Follower.creation_date >= first_day)).count()
+        first_day = actual_month.replace(day=1)
+        this_month_follower = Follower.query.filter(
+            and_(Follower.follower_id == user_id, Follower.creation_date >= first_day)).count()
 
         result = {
             "num_followers": num_followers,
             "followers_last_month": this_month_follower
         }
 
-        return jsonify(result) 
+        return jsonify(result)
 
-# Return True if the user identified by userid exists
+    # Return True if the user identified by userid exists
+
+
 def _check_user_existence(userid):
     user = db.session.query(User).filter(User.id == userid)
     return user.first() is not None
+
 
 # Return True if the user identified by follower_id follows the user identified by followed_id
 def _check_follower_existence(follower_id, followed_id):
