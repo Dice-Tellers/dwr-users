@@ -2,12 +2,10 @@ import datetime
 import json
 
 import flask_testing
-from flask import jsonify
 
 from UsersService.app import create_app
-from UsersService.database import db, User, Follower
+from UsersService.database import db, User
 from UsersService.urls import TEST_DB
-
 
 
 class TestUsers(flask_testing.TestCase):
@@ -33,7 +31,7 @@ class TestUsers(flask_testing.TestCase):
                 example.set_password('admin')
                 db.session.add(example)
                 db.session.commit()
-            
+
             user = db.session.query(User).filter(User.email == 'cantagallo@example.com').first()
             if user is None:
                 example = User()
@@ -72,7 +70,7 @@ class TestUsers(flask_testing.TestCase):
 
     # Executed at end of each test
     # Tear down database at the end of the tests
-    
+
     def tearDown(self) -> None:
         db.session.remove()
         db.drop_all()
@@ -81,7 +79,7 @@ class TestUsers(flask_testing.TestCase):
     def assertDescription(self, reply, expected_description):
         body = json.loads(str(reply.data, 'utf8'))
         self.assertEqual(body['description'], expected_description)
-    
+
     # ----------- Test functions -----------
 
     def test_all_users(self):
@@ -97,22 +95,22 @@ class TestUsers(flask_testing.TestCase):
     def test_create_user(self):
         # Email address already used
         data = json.dumps({
-            'firstname'     : 'Natalia',
-            'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
-            'email'         : 'cantagallo@example.com',
-            'password'      : 'Prova'
+            'firstname': 'Natalia',
+            'lastname': 'Prova',
+            'dateofbirth': datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
+            'email': 'cantagallo@example.com',
+            'password': 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
         self.assertStatus(reply, 406)
 
         # Date of birth > today
         data = json.dumps({
-            'firstname'     : 'Prova',
-            'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(2050, 10, 5).strftime('%Y-%m-%d'),
-            'email'         : 'Prova',
-            'password'      : 'Prova'
+            'firstname': 'Prova',
+            'lastname': 'Prova',
+            'dateofbirth': datetime.datetime(2050, 10, 5).strftime('%Y-%m-%d'),
+            'email': 'Prova',
+            'password': 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
         self.assertStatus(reply, 400)
@@ -120,10 +118,10 @@ class TestUsers(flask_testing.TestCase):
 
         # Bad parameters
         data = json.dumps({
-            'firstname'     : 'Prova',
-            'dateofbirth'   : 'Not a date',
-            'email'         : 'Prova',
-            'password'      : 'Prova'
+            'firstname': 'Prova',
+            'dateofbirth': 'Not a date',
+            'email': 'Prova',
+            'password': 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
         self.assertStatus(reply, 400)
@@ -131,11 +129,11 @@ class TestUsers(flask_testing.TestCase):
 
         # Correct request
         data = json.dumps({
-            'firstname'     : 'Prova',
-            'lastname'      : 'Prova',
-            'dateofbirth'   :  datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
-            'email'         : 'Prova',
-            'password'      : 'Prova'
+            'firstname': 'Prova',
+            'lastname': 'Prova',
+            'dateofbirth': datetime.datetime(2010, 10, 5).strftime('%Y-%m-%d'),
+            'email': 'Prova',
+            'password': 'Prova'
         })
         reply = self.client.post('/users/create', data=data)
         self.assertStatus(reply, 201)
@@ -143,23 +141,22 @@ class TestUsers(flask_testing.TestCase):
         user = db.session.query(User).filter(User.email == 'Prova').first()
         self.assertTrue(user)
 
-
     def test_login(self):
         # Correct request
         data = json.dumps({
-            'email'     : 'cantagallo@example.com',
-            'password'  : 'p'
+            'email': 'cantagallo@example.com',
+            'password': 'p'
         })
         reply = self.client.post('/users/login', data=data)
         body = json.loads(str(reply.data, 'utf8'))
         self.assertEqual(body,
-            {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"}
-        )
+                         {"email": "cantagallo@example.com", "firstname": "Cantagallo", "id": 2, "lastname": "Rooster"}
+                         )
 
         # Password uncorrect
         data = json.dumps({
-            'email'     : 'cantagallo@example.com',
-            'password'  : 'wrong'
+            'email': 'cantagallo@example.com',
+            'password': 'wrong'
         })
         reply = self.client.post('/users/login', data=data)
         self.assertStatus(reply, 400)
@@ -167,15 +164,15 @@ class TestUsers(flask_testing.TestCase):
 
         # Email does not exist
         data = json.dumps({
-            'email'     : 'wrong',
-            'password'  : 'p'
+            'email': 'wrong',
+            'password': 'p'
         })
         reply = self.client.post('/users/login', data=data)
         self.assertStatus(reply, 404)
 
         # Bad parameters
         data = json.dumps({
-            'email'     : 'cantagallo@example.com',
+            'email': 'cantagallo@example.com',
         })
         reply = self.client.post('/users/login', data=data)
         self.assertStatus(reply, 400)
@@ -218,7 +215,7 @@ class TestUsers(flask_testing.TestCase):
         # The user try to follow himself
         reply = self.client.post('users/1/follow?current_user_id=1')
         self.assertStatus(reply, 400)
-        self.assertDescription(reply, "A user can't follow himself")
+        self.assertDescription(reply, "Can't follow yourself")
 
         # Get follower_counter of the user 1
         user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
@@ -229,12 +226,12 @@ class TestUsers(flask_testing.TestCase):
         # Check if follower_counter has been incremented
         user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
         follower_counter_new = user.follower_counter
-        self.assertEqual(follower_counter_new, (follower_counter_old+1))
+        self.assertEqual(follower_counter_new, (follower_counter_old + 1))
 
         # Try to follow again the same user
         reply = self.client.post('users/1/follow?current_user_id=2')
         self.assertStatus(reply, 400)
-        self.assertDescription(reply, 'The user already follow this storyteller')
+        self.assertDescription(reply, 'You already follow this storyteller')
 
     def test_unfollow(self):
         # Requests with bad parameters
@@ -259,7 +256,7 @@ class TestUsers(flask_testing.TestCase):
         # The user try to unfollow himself
         reply = self.client.post('users/1/unfollow?current_user_id=1')
         self.assertStatus(reply, 400)
-        self.assertDescription(reply, "A user can't unfollow himself")
+        self.assertDescription(reply, "You can't follow yourself")
 
         # Let user 2 follows user 1
         reply = self.client.post('users/1/follow?current_user_id=2')
@@ -274,12 +271,12 @@ class TestUsers(flask_testing.TestCase):
         # Check if follower_counter has been decremented
         user = db.session.query(User).with_entities(User.follower_counter).filter(User.id == 1).first()
         follower_counter_new = user.follower_counter
-        self.assertEqual(follower_counter_new, (follower_counter_old-1))
+        self.assertEqual(follower_counter_new, (follower_counter_old - 1))
 
         # Try to unfollow again the same user
         reply = self.client.post('users/1/unfollow?current_user_id=2')
         self.assertStatus(reply, 400)
-        self.assertDescription(reply, 'The user should follow the other user before unfollowing')
+        self.assertDescription(reply, 'You should follow this storyteller before unfollowing')
 
     def test_followers(self):
         # Let user 2 follows user 1
@@ -308,7 +305,7 @@ class TestUsers(flask_testing.TestCase):
         body = json.loads(str(response.data, 'utf8'))
         self.assertEqual(body, [
             {"email": "thebest@example.com", "firstname": "Cantagallo", "id": 3, "lastname": "TheBest"}])
-    
+
     def test_search_double_exist_firstname(self):
         response = self.client.get('/search?query=Cantagallo')
         body = json.loads(str(response.data, 'utf8'))
@@ -343,11 +340,11 @@ class TestUsers(flask_testing.TestCase):
         self.assertStatus(response, 400)
         self.assertEqual(body['description'],
                          'Error with query parameter')
-    
+
     def test_search_empty_request(self):
-        response = self.client.get('/search?query=')        
-        self.assertStatus(response, 204)        
-    
+        response = self.client.get('/search?query=')
+        self.assertStatus(response, 204)
+
     def test_user_stats(self):
         reply = self.client.get('users/1/stats')
         self.assertEqual(reply.status_code, 200)
@@ -355,5 +352,5 @@ class TestUsers(flask_testing.TestCase):
         self.assertEqual(body, {"num_followers": 0, "followers_last_month": 0})
 
         # The user does not exist
-        reply = self.client.get('users/4/stats')
+        reply = self.client.get('users/180/stats')
         self.assertEqual(reply.status_code, 404)
